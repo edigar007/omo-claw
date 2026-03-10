@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "bin": {
-    "omo-claw-install": "./scripts/install-plugin.sh"
+    "omo-claw-install": "./scripts/omo-claw-install.mjs"
   },
   "exports": {
     ".": "./src/index.ts"
