@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs"
 import { spawn } from "node:child_process"
+import { readFileSync } from "node:fs"
 
 export interface RuntimeManagerOptions {
   rootDir: string
@@ -21,6 +21,7 @@ export interface RuntimeSpawnSpec {
   command: string
   args: string[]
   env: Record<string, string>
+  shell?: boolean
   healthUrl: string
   basicAuthHeader: string
 }
@@ -35,10 +36,11 @@ export interface ChildProcessLike {
 }
 
 export interface RuntimeManagerDeps {
-  spawn?: (command: string, args: string[], options: { cwd: string; env: NodeJS.ProcessEnv; stdio: "ignore" }) => ChildProcessLike
+  spawn?: (command: string, args: string[], options: { cwd: string; env: NodeJS.ProcessEnv; stdio: "ignore"; shell?: boolean }) => ChildProcessLike
   fetch?: (input: string, init?: RequestInit) => Promise<Response>
   now?: () => number
   sleep?: (ms: number) => Promise<void>
+  platform?: () => NodeJS.Platform
 }
 
 export class RuntimeManager {
@@ -56,6 +58,7 @@ export class RuntimeManager {
       fetch: deps?.fetch ?? ((input, init) => fetch(input, init)),
       now: deps?.now ?? (() => Date.now()),
       sleep: deps?.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms))),
+      platform: deps?.platform ?? (() => process.platform),
     }
   }
 
@@ -88,6 +91,7 @@ export class RuntimeManager {
         this.options.hostname,
       ],
       env,
+      shell: this.deps.platform() === "win32",
       healthUrl: this.getHealthUrl(),
       basicAuthHeader: this.getBasicAuthHeader(),
     }
@@ -132,6 +136,7 @@ export class RuntimeManager {
       cwd: this.options.rootDir,
       env: { ...process.env, ...spec.env },
       stdio: "ignore",
+      shell: spec.shell,
     })
     this.child = child
 
@@ -144,7 +149,7 @@ export class RuntimeManager {
     const timeoutMs = this.options.startupTimeoutMs ?? 5_000
     const pollMs = this.options.healthPollIntervalMs ?? 100
     const startedAt = this.deps.now()
-    let lastError: unknown = undefined
+    let lastError: unknown
 
     while (this.deps.now() - startedAt <= timeoutMs) {
       this.assertProcessHealthyState()

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { EventEmitter } from "node:events"
-import { RuntimeManager, type ChildProcessLike } from "../src/runtime-manager.ts"
+import { join } from "node:path"
+import { type ChildProcessLike, RuntimeManager } from "../src/runtime-manager.ts"
 import { createRuntimeOptions } from "./test-helpers.ts"
 
 class FakeChildProcess extends EventEmitter implements ChildProcessLike {
@@ -21,10 +22,10 @@ describe("RuntimeManager", () => {
 
     const env = manager.buildServerEnv()
 
-    expect(env.XDG_CONFIG_HOME).toContain("integration/bridge-runtime/xdg/config")
-    expect(env.XDG_DATA_HOME).toContain("integration/bridge-runtime/xdg/data")
-    expect(env.XDG_STATE_HOME).toContain("integration/bridge-runtime/xdg/state")
-    expect(env.OPENCODE_CONFIG_DIR).toContain("integration/bridge-runtime/.opencode")
+    expect(env.XDG_CONFIG_HOME).toContain(join("integration", "bridge-runtime", "xdg", "config"))
+    expect(env.XDG_DATA_HOME).toContain(join("integration", "bridge-runtime", "xdg", "data"))
+    expect(env.XDG_STATE_HOME).toContain(join("integration", "bridge-runtime", "xdg", "state"))
+    expect(env.OPENCODE_CONFIG_DIR).toContain(join("integration", "bridge-runtime", ".opencode"))
     expect(env.OPENCODE_SERVER_PASSWORD).toBe("secret-123")
   })
 
@@ -35,8 +36,21 @@ describe("RuntimeManager", () => {
 
     expect(spec.command).toBe("opencode")
     expect(spec.args).toEqual(["serve", "--port", "19222", "--hostname", "127.0.0.1"])
+    expect(spec.shell).toBe(process.platform === "win32")
     expect(spec.healthUrl).toBe("http://127.0.0.1:19222/global/health")
     expect(spec.basicAuthHeader).toBe("Basic b3BlbmNvZGU6c2VjcmV0LTEyMw==")
+  })
+
+  test("buildSpawnSpec enables shell mode on Windows", () => {
+    const manager = new RuntimeManager(createRuntimeOptions(), {
+      platform: () => "win32",
+    })
+
+    const spec = manager.buildSpawnSpec()
+
+    expect(spec.command).toBe("opencode")
+    expect(spec.args).toEqual(["serve", "--port", "19222", "--hostname", "127.0.0.1"])
+    expect(spec.shell).toBeTrue()
   })
 
   test("healthcheck request includes Authorization header", () => {
@@ -52,11 +66,11 @@ describe("RuntimeManager", () => {
 
   test("start spawns process and waits for health", async () => {
     const child = new FakeChildProcess()
-    const spawnCalls: Array<{ command: string; args: string[] }> = []
+    const spawnCalls: Array<{ command: string; args: string[]; shell?: boolean }> = []
     let fetchCount = 0
     const manager = new RuntimeManager(createRuntimeOptions(), {
-      spawn(command, args) {
-        spawnCalls.push({ command, args })
+      spawn(command, args, options) {
+        spawnCalls.push({ command, args, shell: options.shell })
         return child
       },
       fetch: async (_input, _init) => {
@@ -69,7 +83,7 @@ describe("RuntimeManager", () => {
     const result = await manager.start()
 
     expect(spawnCalls).toEqual([
-      { command: "opencode", args: ["serve", "--port", "19222", "--hostname", "127.0.0.1"] },
+      { command: "opencode", args: ["serve", "--port", "19222", "--hostname", "127.0.0.1"], shell: process.platform === "win32" },
     ])
     expect(result.pid).toBe(4242)
     expect(result.baseUrl).toBe("http://127.0.0.1:19222")
