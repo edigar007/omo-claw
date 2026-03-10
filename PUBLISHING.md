@@ -8,12 +8,18 @@
    - `bun run compile:definitions`
    - `bun test`
    - `bun run typecheck`
-   - `./tests/live/runtime-health.smoke.sh`
+   - `./tests/live/runtime-health.smoke.sh` on macOS / Linux, or `powershell -ExecutionPolicy Bypass -File .\tests\live\runtime-health.smoke.ps1` on Windows
 
 ## One-command publish
 
 ```bash
 ./scripts/publish-github.sh omo-claw Her-xanadu public
+```
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\publish-github.ps1 omo-claw Her-xanadu public
 ```
 
 ## What the script does
@@ -27,6 +33,14 @@
 ## Manual fallback
 
 ```bash
+gh repo create Her-xanadu/omo-claw --public --description "SDK-only OpenClaw plugin and context engine bridging OpenClaw threads into an isolated headless OpenCode + OmO runtime."
+git remote add origin https://github.com/Her-xanadu/omo-claw.git
+git push -u origin HEAD
+```
+
+Windows PowerShell:
+
+```powershell
 gh repo create Her-xanadu/omo-claw --public --description "SDK-only OpenClaw plugin and context engine bridging OpenClaw threads into an isolated headless OpenCode + OmO runtime."
 git remote add origin https://github.com/Her-xanadu/omo-claw.git
 git push -u origin HEAD

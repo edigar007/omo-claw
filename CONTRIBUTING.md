@@ -6,7 +6,7 @@
 2. Regenerate definitions with `bun run compile:definitions`
 3. Run `bun test`
 4. Run `bun run typecheck`
-5. For runtime changes, run `./tests/live/runtime-health.smoke.sh`
+5. For runtime changes, run `./tests/live/runtime-health.smoke.sh` on macOS / Linux, or `powershell -ExecutionPolicy Bypass -File .\tests\live\runtime-health.smoke.ps1` on Windows
 
 ## Pull requests
 

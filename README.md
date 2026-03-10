@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img alt="platform" src="https://img.shields.io/badge/platform-macOS%20%2F%20OpenClaw-0f172a?style=for-the-badge&logo=apple&logoColor=white">
+  <img alt="platform" src="https://img.shields.io/badge/platform-macOS%20%2F%20Windows%20%2F%20OpenClaw-0f172a?style=for-the-badge&logo=windows&logoColor=white">
   <img alt="runtime" src="https://img.shields.io/badge/runtime-Bun%20%2B%20OpenCode-1d4ed8?style=for-the-badge&logo=bun&logoColor=white">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-111827?style=for-the-badge">
 </p>
@@ -49,7 +49,16 @@ npm install -g github:Her-xanadu/omo-claw
 omo-claw-install /path/to/your/openclaw/plugins/omo-claw
 ```
 
+On Windows, the npm wrapper installs a native launcher, so you can also run:
+
+```powershell
+npm install -g github:Her-xanadu/omo-claw
+omo-claw-install C:\path\to\your\openclaw\plugins\omo-claw
+```
+
 ### Git / source checkout
+
+macOS / Linux:
 
 ```bash
 git clone https://github.com/Her-xanadu/omo-claw.git
@@ -57,7 +66,17 @@ cd omo-claw
 ./scripts/setup-local.sh
 ```
 
+Windows PowerShell:
+
+```powershell
+git clone https://github.com/Her-xanadu/omo-claw.git
+Set-Location omo-claw
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1
+```
+
 `omo-claw-install` clones the repository, runs local setup, and then prints the remaining OpenClaw registration steps.
+
+> Windows support is currently experimental. The PowerShell install / startup path is documented below, but the repository is still macOS-first and may require a little extra validation in your environment.
 
 ---
 
@@ -122,7 +141,7 @@ This makes it useful both as a **real plugin** and as a **reference implementati
 Before using `omo claw`, make sure you have:
 
 - [Bun](https://bun.sh/)
-- `opencode` CLI available in PATH (or at `~/.opencode/bin/opencode`)
+- `opencode` CLI available in PATH (or at `~/.opencode/bin/opencode`, `%USERPROFILE%\.opencode\bin\opencode.exe`, or `%USERPROFILE%\.opencode\bin\opencode.cmd`)
 - an OpenClaw installation that supports context-engine plugins
 - permission to run a local headless service on `127.0.0.1:19222`
 
@@ -132,7 +151,7 @@ Before using `omo claw`, make sure you have:
 | --- | --- | --- |
 | macOS | ✅ primary tested platform | recommended environment |
 | Linux | ⚠️ partially supported | only if your OpenClaw + OpenCode stack already works |
-| Windows | ❌ not documented | use at your own risk / not currently supported |
+| Windows | ⚠️ experimental | PowerShell install / startup scripts are available, but the project is still macOS-first |
 
 ### Required software
 
@@ -146,9 +165,11 @@ Before using `omo claw`, make sure you have:
 ### Before you run setup
 
 - confirm `bun --version` works
-- confirm `opencode --help` works, or `~/.opencode/bin/opencode` exists
+- confirm `opencode --help` works, or `~/.opencode/bin/opencode` / `%USERPROFILE%\.opencode\bin\opencode.exe` exists
 - confirm OpenClaw can load plugins from your plugin workspace
 - confirm port `19222` is available
+
+If PowerShell blocks direct script execution on Windows, use `powershell -ExecutionPolicy Bypass -File <script.ps1>` for the commands below.
 
 > Homebrew and npm can bootstrap installation, but this repository is still an OpenClaw plugin project with a managed runtime bridge.
 
@@ -156,9 +177,18 @@ Before using `omo claw`, make sure you have:
 
 ## Run after install
 
+macOS / Linux:
+
 ```bash
 ./integration/bridge-runtime/bridge-launcher.sh
 ./tests/live/runtime-health.smoke.sh
+```
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\integration\bridge-runtime\bridge-launcher.ps1
+powershell -ExecutionPolicy Bypass -File .\tests\live\runtime-health.smoke.ps1
 ```
 
 If everything is wired correctly, the smoke check returns:
@@ -174,8 +204,8 @@ If everything is wired correctly, the smoke check returns:
 1. Place this repository into your OpenClaw plugin workspace.
 2. Register `openclaw.plugin.json` with your OpenClaw installation.
 3. Configure the context-engine slot to use plugin id **`omo-claw`**.
-4. Start the bridge runtime with `./integration/bridge-runtime/bridge-launcher.sh`.
-5. Verify the runtime with `./tests/live/runtime-health.smoke.sh`.
+4. Start the bridge runtime with `./integration/bridge-runtime/bridge-launcher.sh` on macOS / Linux, or `powershell -ExecutionPolicy Bypass -File .\integration\bridge-runtime\bridge-launcher.ps1` on Windows.
+5. Verify the runtime with `./tests/live/runtime-health.smoke.sh` on macOS / Linux, or `powershell -ExecutionPolicy Bypass -File .\tests\live\runtime-health.smoke.ps1` on Windows.
 
 The main OpenClaw-facing identifiers are:
 
@@ -190,6 +220,8 @@ The main OpenClaw-facing identifiers are:
 
 ## Local development
 
+macOS / Linux:
+
 ```bash
 ./scripts/setup-local.sh
 bun test
@@ -197,11 +229,29 @@ bun run typecheck
 ./tests/live/runtime-health.smoke.sh
 ```
 
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1
+bun test
+bun run typecheck
+powershell -ExecutionPolicy Bypass -File .\tests\live\runtime-health.smoke.ps1
+```
+
 Useful extra commands:
+
+macOS / Linux:
 
 ```bash
 bun run compile:definitions
 ./scripts/publish-github.sh omo-claw Her-xanadu public
+```
+
+Windows PowerShell:
+
+```powershell
+bun run compile:definitions
+powershell -ExecutionPolicy Bypass -File .\scripts\publish-github.ps1 omo-claw Her-xanadu public
 ```
 
 ---

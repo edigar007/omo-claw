@@ -31,7 +31,16 @@ npm install -g github:Her-xanadu/omo-claw
 omo-claw-install /path/to/your/openclaw/plugins/omo-claw
 ```
 
+Windows PowerShell:
+
+```powershell
+npm install -g github:Her-xanadu/omo-claw
+omo-claw-install C:\path\to\your\openclaw\plugins\omo-claw
+```
+
 ### Option 3: direct git clone
+
+macOS / Linux:
 
 ```bash
 git clone https://github.com/Her-xanadu/omo-claw.git
@@ -39,14 +48,24 @@ cd omo-claw
 ./scripts/setup-local.sh
 ```
 
+Windows PowerShell:
+
+```powershell
+git clone https://github.com/Her-xanadu/omo-claw.git
+Set-Location omo-claw
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1
+```
+
+> Windows is currently an experimental path. Prefer the PowerShell commands shown here instead of the Unix shell scripts.
+
 ## What the installer must do
 
 1. Install the repository into the user's OpenClaw plugin workspace, or fall back to `./omo-claw` if no workspace path is provided.
-2. Run `./scripts/setup-local.sh` inside the repository.
+2. Run `./scripts/setup-local.sh` inside the repository on macOS / Linux, or `powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1` on Windows.
 3. Register `openclaw.plugin.json` with OpenClaw.
 4. Configure the context-engine entry to use plugin id `omo-claw`.
-5. Start `./integration/bridge-runtime/bridge-launcher.sh`.
-6. Verify with `./tests/live/runtime-health.smoke.sh`.
+5. Start `./integration/bridge-runtime/bridge-launcher.sh` on macOS / Linux, or `powershell -ExecutionPolicy Bypass -File .\integration\bridge-runtime\bridge-launcher.ps1` on Windows.
+6. Verify with `./tests/live/runtime-health.smoke.sh` on macOS / Linux, or `powershell -ExecutionPolicy Bypass -File .\tests\live\runtime-health.smoke.ps1` on Windows.
 7. Report the final plugin id, gateway method, status command, and health-check result.
 
 ## Runtime verification
