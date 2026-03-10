@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img alt="platform" src="https://img.shields.io/badge/platform-macOS%20%2F%20OpenClaw-0f172a?style=for-the-badge&logo=apple&logoColor=white">
+  <img alt="platform" src="https://img.shields.io/badge/platform-macOS%20%2F%20Windows%20%2F%20OpenClaw-0f172a?style=for-the-badge&logo=windows&logoColor=white">
   <img alt="runtime" src="https://img.shields.io/badge/runtime-Bun%20%2B%20OpenCode-1d4ed8?style=for-the-badge&logo=bun&logoColor=white">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-111827?style=for-the-badge">
 </p>
@@ -49,7 +49,16 @@ npm install -g github:Her-xanadu/omo-claw
 omo-claw-install /path/to/your/openclaw/plugins/omo-claw
 ```
 
+在 Windows 上，npm 会安装可直接调用的本地 launcher，所以也可以这样运行：
+
+```powershell
+npm install -g github:Her-xanadu/omo-claw
+omo-claw-install C:\path\to\your\openclaw\plugins\omo-claw
+```
+
 ### Git / 源码方式
+
+macOS / Linux：
 
 ```bash
 git clone https://github.com/Her-xanadu/omo-claw.git
@@ -57,7 +66,17 @@ cd omo-claw
 ./scripts/setup-local.sh
 ```
 
+Windows PowerShell：
+
+```powershell
+git clone https://github.com/Her-xanadu/omo-claw.git
+Set-Location omo-claw
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1
+```
+
 `omo-claw-install` 会自动克隆仓库、执行本地初始化，然后提示剩余的 OpenClaw 注册步骤。
+
+> Windows 目前属于实验性支持。仓库已经补齐 PowerShell 安装 / 启动路径，但整体仍然偏 macOS-first，建议在你的本地环境里多做一次实际验证。
 
 ---
 
@@ -122,7 +141,7 @@ cd omo-claw
 在使用 `omo claw` 前，请先准备：
 
 - [Bun](https://bun.sh/)
-- `opencode` CLI（或 `~/.opencode/bin/opencode` 可用）
+- `opencode` CLI（或 `~/.opencode/bin/opencode`、`%USERPROFILE%\.opencode\bin\opencode.exe`、`%USERPROFILE%\.opencode\bin\opencode.cmd` 可用）
 - 支持 context-engine 插件的 OpenClaw 环境
 - 本地允许启动 `127.0.0.1:19222` 的 headless 服务
 
@@ -132,7 +151,7 @@ cd omo-claw
 | --- | --- | --- |
 | macOS | ✅ 主要验证平台 | 推荐环境 |
 | Linux | ⚠️ 部分支持 | 仅适用于你本地 OpenClaw + OpenCode 已正常可用的情况 |
-| Windows | ❌ 未文档化支持 | 当前不作为正式支持平台 |
+| Windows | ⚠️ 实验性支持 | 已提供 PowerShell 安装 / 启动脚本，但整体仍以 macOS 为主 |
 
 ### 必需的软件
 
@@ -146,9 +165,11 @@ cd omo-claw
 ### 开始前先确认
 
 - `bun --version` 可以正常运行
-- `opencode --help` 可以正常运行，或 `~/.opencode/bin/opencode` 存在
+- `opencode --help` 可以正常运行，或 `~/.opencode/bin/opencode` / `%USERPROFILE%\.opencode\bin\opencode.exe` 存在
 - OpenClaw 已经能从你的插件工作区加载插件
 - 端口 `19222` 没有被占用
+
+如果 Windows 上的 PowerShell 执行策略阻止直接运行脚本，请统一使用 `powershell -ExecutionPolicy Bypass -File <script.ps1>` 的形式。
 
 > Homebrew 和 npm 可以作为安装入口，但这个仓库本质上仍然是一个 OpenClaw 插件项目，加上一层受控的 runtime bridge。
 
@@ -156,9 +177,18 @@ cd omo-claw
 
 ## 安装后启动
 
+macOS / Linux：
+
 ```bash
 ./integration/bridge-runtime/bridge-launcher.sh
 ./tests/live/runtime-health.smoke.sh
+```
+
+Windows PowerShell：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\integration\bridge-runtime\bridge-launcher.ps1
+powershell -ExecutionPolicy Bypass -File .\tests\live\runtime-health.smoke.ps1
 ```
 
 如果配置正常，最后一条 smoke 命令会返回：
@@ -174,8 +204,8 @@ cd omo-claw
 1. 把这个仓库放进 OpenClaw 的插件工作区。
 2. 让 OpenClaw 注册 `openclaw.plugin.json`。
 3. 在 context-engine 配置里使用插件 id **`omo-claw`**。
-4. 用 `./integration/bridge-runtime/bridge-launcher.sh` 启动 bridge runtime。
-5. 用 `./tests/live/runtime-health.smoke.sh` 验证运行时。
+4. macOS / Linux 用 `./integration/bridge-runtime/bridge-launcher.sh` 启动 bridge runtime；Windows 用 `powershell -ExecutionPolicy Bypass -File .\integration\bridge-runtime\bridge-launcher.ps1`。
+5. macOS / Linux 用 `./tests/live/runtime-health.smoke.sh` 验证运行时；Windows 用 `powershell -ExecutionPolicy Bypass -File .\tests\live\runtime-health.smoke.ps1`。
 
 OpenClaw 侧关键标识如下：
 
@@ -190,6 +220,8 @@ OpenClaw 侧关键标识如下：
 
 ## 本地开发
 
+macOS / Linux：
+
 ```bash
 ./scripts/setup-local.sh
 bun test
@@ -197,11 +229,29 @@ bun run typecheck
 ./tests/live/runtime-health.smoke.sh
 ```
 
+Windows PowerShell：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1
+bun test
+bun run typecheck
+powershell -ExecutionPolicy Bypass -File .\tests\live\runtime-health.smoke.ps1
+```
+
 常用附加命令：
+
+macOS / Linux：
 
 ```bash
 bun run compile:definitions
 ./scripts/publish-github.sh omo-claw Her-xanadu public
+```
+
+Windows PowerShell：
+
+```powershell
+bun run compile:definitions
+powershell -ExecutionPolicy Bypass -File .\scripts\publish-github.ps1 omo-claw Her-xanadu public
 ```
 
 ---
