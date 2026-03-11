@@ -4,6 +4,11 @@
   "description": "SDK-only OpenClaw plugin and context-engine bridge for OpenCode + OmO",
   "private": true,
   "type": "module",
+  "openclaw": {
+    "extensions": [
+      "./src/openclaw-bridge-plugin.ts"
+    ]
+  },
   "bin": {
     "omo-claw-install": "./scripts/omo-claw-install.mjs"
   },
