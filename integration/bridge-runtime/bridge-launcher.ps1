@@ -42,7 +42,6 @@ foreach ($path in @(
 $env:XDG_CONFIG_HOME = Join-Path $runtimeDir "xdg\config"
 $env:XDG_DATA_HOME = Join-Path $runtimeDir "xdg\data"
 $env:XDG_STATE_HOME = Join-Path $runtimeDir "xdg\state"
-$env:OPENCODE_CONFIG = Join-Path $runtimeDir "opencode.bridge.json"
 $env:OPENCODE_CONFIG_DIR = Join-Path $runtimeDir ".opencode"
 $env:OPENCODE_SERVER_PASSWORD = (Get-Content $secretFile -Raw).Trim()
 

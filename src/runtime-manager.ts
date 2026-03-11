@@ -71,7 +71,6 @@ export class RuntimeManager {
       XDG_CONFIG_HOME: this.options.xdgConfigHome,
       XDG_DATA_HOME: this.options.xdgDataHome,
       XDG_STATE_HOME: this.options.xdgStateHome,
-      OPENCODE_CONFIG: this.options.configPath,
       OPENCODE_CONFIG_DIR: this.options.configDir,
       OPENCODE_SERVER_PASSWORD: password,
       ...(this.options.serverUsername
