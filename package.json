@@ -25,6 +25,9 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@opencode-ai/sdk": "1.2.24"
+  },
   "devDependencies": {
     "bun-types": "latest",
     "typescript": "^5.9.3"
