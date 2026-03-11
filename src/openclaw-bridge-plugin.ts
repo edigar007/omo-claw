@@ -34,6 +34,13 @@ interface OmoClawPluginConfig {
   permissionFlow?: PermissionFlow
 }
 
+interface ContextEngineMessageLike {
+  role?: unknown
+  content?: unknown
+  text?: unknown
+  type?: unknown
+}
+
 function isPermissionFlow(value: unknown): value is PermissionFlow {
   return value === "auto-approve" || value === "prompt-user" || value === "deny-all"
 }
@@ -54,6 +61,70 @@ function resolvePluginConfig(raw: Record<string, unknown> | undefined): Required
 
 function resolvePluginRootDir(): string {
   return dirname(dirname(fileURLToPath(import.meta.url)))
+}
+
+function stringifyContextValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => stringifyContextValue(item))
+      .filter((item) => item.length > 0)
+      .join("\n")
+  }
+
+  if (typeof value === "object" && value !== null) {
+    const text = (value as { text?: unknown }).text
+    if (typeof text === "string") {
+      return text
+    }
+
+    const content = (value as { content?: unknown }).content
+    if (content !== undefined) {
+      const rendered = stringifyContextValue(content)
+      if (rendered.length > 0) {
+        return rendered
+      }
+    }
+
+    const type = (value as { type?: unknown }).type
+    if (typeof type === "string") {
+      return `[${type}] ${inspect(value, { depth: 3, breakLength: 100 })}`
+    }
+  }
+
+  return inspect(value, { depth: 3, breakLength: 100 })
+}
+
+export function normalizeContextEngineIngest(input: {
+  threadID?: unknown
+  sessionId?: unknown
+  sessionID?: unknown
+  text?: unknown
+  message?: unknown
+}): { threadID: string; text: string } {
+  const threadID = typeof input.threadID === "string" && input.threadID.length > 0
+    ? input.threadID
+    : typeof input.sessionId === "string" && input.sessionId.length > 0
+      ? input.sessionId
+      : typeof input.sessionID === "string" && input.sessionID.length > 0
+        ? input.sessionID
+        : null
+
+  if (!threadID) {
+    throw new Error("Missing thread/session id in context-engine ingest payload")
+  }
+
+  const rawMessage = input.message as ContextEngineMessageLike | undefined
+  const rolePrefix = typeof rawMessage?.role === "string" && rawMessage.role.length > 0
+    ? `[${rawMessage.role}] `
+    : ""
+  const rawContent = input.text ?? rawMessage?.content ?? rawMessage?.text ?? rawMessage
+  const text = `${rolePrefix}${stringifyContextValue(rawContent)}`.trim()
+
+  return { threadID, text }
 }
 
 function formatBridgeError(error: unknown): string {
@@ -199,9 +270,13 @@ export function createOpenClawBridgePlugin(
         name: "omo claw",
         ownsCompaction: false,
       },
-      ingest: async ({ threadID, text }) => {
+      ingest: async (input: { threadID?: unknown; sessionId?: unknown; sessionID?: unknown; text?: unknown; message?: unknown }) => {
         try {
-          await orchestrator.injectContext(threadID, text)
+          const normalized = normalizeContextEngineIngest(input)
+          if (normalized.text.length === 0) {
+            return { ingested: false }
+          }
+          await orchestrator.injectContext(normalized.threadID, normalized.text)
         } catch (error) {
           throw new Error(`omo-claw ingest failed: ${formatBridgeError(error)}`)
         }

@@ -1,9 +1,45 @@
 import { createOpencodeClient } from "@opencode-ai/sdk/v2"
+import { inspect } from "node:util"
 import type { BridgeSdkClientConfig, OpencodeSdkLike } from "./bridge-sdk-client.ts"
 
 interface TextPromptPart {
   type: "text"
   text: string
+}
+
+function stringifyPromptValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => stringifyPromptValue(item))
+      .filter((item) => item.length > 0)
+      .join("\n")
+  }
+
+  if (typeof value === "object" && value !== null) {
+    const text = (value as { text?: unknown }).text
+    if (typeof text === "string") {
+      return text
+    }
+
+    const content = (value as { content?: unknown }).content
+    if (content !== undefined) {
+      const rendered = stringifyPromptValue(content)
+      if (rendered.length > 0) {
+        return rendered
+      }
+    }
+
+    const type = (value as { type?: unknown }).type
+    if (typeof type === "string") {
+      return `[${type}] ${inspect(value, { depth: 3, breakLength: 100 })}`
+    }
+  }
+
+  return inspect(value, { depth: 3, breakLength: 100 })
 }
 
 function isTextPromptPart(value: unknown): value is TextPromptPart {
@@ -13,12 +49,23 @@ function isTextPromptPart(value: unknown): value is TextPromptPart {
     && typeof (value as { text?: unknown }).text === "string"
 }
 
-function toPromptParts(parts: Array<unknown>): TextPromptPart[] {
+export function normalizePromptPartsForOpencode(parts: Array<unknown>): TextPromptPart[] {
   return parts.map((part) => {
-    if (!isTextPromptPart(part)) {
-      throw new Error("Only text prompt parts are supported by omo-claw right now")
+    if (isTextPromptPart(part)) {
+      return part
     }
-    return part
+
+    if (typeof part === "object" && part !== null && (part as { type?: unknown }).type === "text") {
+      return {
+        type: "text",
+        text: stringifyPromptValue((part as { text?: unknown }).text),
+      }
+    }
+
+    return {
+      type: "text",
+      text: stringifyPromptValue(part),
+    }
   })
 }
 
@@ -68,7 +115,7 @@ export function createOpencodeSdkAdapter(config: BridgeSdkClientConfig): Opencod
       messages: (parameters) => requireData(client.session.messages(parameters), "OpenCode session.messages response is missing data"),
       promptAsync: (parameters) => passthroughData(client.session.promptAsync({
         ...parameters,
-        parts: toPromptParts(parameters.parts),
+        parts: normalizePromptPartsForOpencode(parameters.parts),
       })),
       command: (parameters) => passthroughData(client.session.command(parameters)),
       todo: (parameters) => passthroughData(client.session.todo(parameters)),

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { createOpenClawBridgePlugin, type OpenClawPluginApi } from "../src/openclaw-bridge-plugin.ts"
+import { createOpenClawBridgePlugin, normalizeContextEngineIngest, type OpenClawPluginApi } from "../src/openclaw-bridge-plugin.ts"
 
 function createOrchestratorStub() {
   return {
@@ -83,5 +83,21 @@ describe("OpenClaw bridge plugin", () => {
     await expect(ingest?.({ threadID: "thread-1", text: "hello" })).rejects.toThrow(
       "omo-claw ingest failed: ConfigInvalidError | path=integration/bridge-runtime/opencode.bridge.json | Unrecognized keys: \"runtime\", \"bridge\", \"policy\"",
     )
+  })
+
+  test("normalizes rich ingest payloads into thread text", () => {
+    expect(normalizeContextEngineIngest({
+      sessionId: "session-1",
+      message: {
+        role: "user",
+        content: [
+          { type: "text", text: "remember this" },
+          { type: "image", url: "file:///tmp/example.png" },
+        ],
+      },
+    })).toEqual({
+      threadID: "session-1",
+      text: expect.stringContaining("[user] remember this"),
+    })
   })
 })
