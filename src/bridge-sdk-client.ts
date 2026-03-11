@@ -57,7 +57,66 @@ export interface SessionMessageRecord {
   parts?: Array<unknown>
 }
 
-type RequestEnvelope<T> = Promise<{ data: T; request?: Record<string, unknown> }>
+type RequestEnvelope<T> = Promise<{ data: T; request?: unknown }>
+
+type PromptModel = {
+  providerID: string
+  modelID: string
+}
+
+type SessionCreateRequest = {
+  directory: string
+  parentID?: string
+  title?: string
+}
+
+type SessionGetRequest = {
+  sessionID: string
+  directory: string
+}
+
+type SessionMessagesRequest = {
+  sessionID: string
+  directory: string
+  limit?: number
+}
+
+type SessionPromptAsyncRequest = {
+  sessionID: string
+  directory: string
+  agent?: string
+  model?: PromptModel
+  noReply?: boolean
+  parts: Array<unknown>
+}
+
+type SessionCommandRequest = {
+  sessionID: string
+  directory: string
+  command: string
+  arguments?: string
+  agent?: string
+  model?: string
+}
+
+type SessionTodoRequest = {
+  sessionID: string
+  directory: string
+}
+
+type PermissionReplyRequest = {
+  requestID: string
+  directory: string
+  reply: "once" | "always" | "reject"
+  message?: string
+}
+
+type SessionPermissionReplyRequest = {
+  sessionID: string
+  permissionID: string
+  directory: string
+  response: "once" | "always" | "reject"
+}
 
 export interface OpencodeSdkLike {
   global: {
@@ -65,16 +124,16 @@ export interface OpencodeSdkLike {
     event(): Promise<{ stream: AsyncIterable<unknown> }>
   }
   session: {
-    create(parameters: Record<string, unknown>): RequestEnvelope<SessionRecord>
-    get(parameters: Record<string, unknown>): RequestEnvelope<SessionRecord>
-    messages(parameters: Record<string, unknown>): RequestEnvelope<SessionMessageRecord[]>
-    promptAsync(parameters: Record<string, unknown>): RequestEnvelope<unknown>
-    command(parameters: Record<string, unknown>): RequestEnvelope<unknown>
-    todo(parameters: Record<string, unknown>): RequestEnvelope<unknown>
-    respondPermission?(parameters: Record<string, unknown>): RequestEnvelope<boolean>
+    create(parameters: SessionCreateRequest): RequestEnvelope<SessionRecord>
+    get(parameters: SessionGetRequest): RequestEnvelope<SessionRecord>
+    messages(parameters: SessionMessagesRequest): RequestEnvelope<SessionMessageRecord[]>
+    promptAsync(parameters: SessionPromptAsyncRequest): RequestEnvelope<unknown>
+    command(parameters: SessionCommandRequest): RequestEnvelope<unknown>
+    todo(parameters: SessionTodoRequest): RequestEnvelope<unknown>
+    respondPermission?(parameters: SessionPermissionReplyRequest): RequestEnvelope<boolean>
   }
   permission: {
-    reply(parameters: Record<string, unknown>): RequestEnvelope<boolean>
+    reply(parameters: PermissionReplyRequest): RequestEnvelope<boolean>
   }
 }
 
