@@ -50,4 +50,38 @@ describe("OpenClaw bridge plugin", () => {
       text: "bridge=http://127.0.0.1:19222 healthy=true threads=0 pendingPermissions=0",
     })
   })
+
+  test("formats object-style ingest failures into readable errors", async () => {
+    let ingest: ((input: { threadID: string; text: string }) => Promise<{ ingested: boolean }>) | undefined
+
+    const api: OpenClawPluginApi = {
+      registerGatewayMethod() {},
+      registerCommand() {},
+      registerContextEngine(_id, factory) {
+        ingest = factory().ingest
+      },
+    }
+
+    createOpenClawBridgePlugin({
+      async getHealth() {
+        return { healthy: true, version: "1.2.21", baseUrl: "http://127.0.0.1:19222" }
+      },
+      async injectContext() {
+        throw {
+          name: "ConfigInvalidError",
+          data: {
+            path: "integration/bridge-runtime/opencode.bridge.json",
+            issues: [{ message: 'Unrecognized keys: "runtime", "bridge", "policy"' }],
+          },
+        }
+      },
+      getStatus() {
+        return { runtimeBaseUrl: "http://127.0.0.1:19222", threads: [], pendingPermissions: [] }
+      },
+    } as never)(api)
+
+    await expect(ingest?.({ threadID: "thread-1", text: "hello" })).rejects.toThrow(
+      "omo-claw ingest failed: ConfigInvalidError | path=integration/bridge-runtime/opencode.bridge.json | Unrecognized keys: \"runtime\", \"bridge\", \"policy\"",
+    )
+  })
 })

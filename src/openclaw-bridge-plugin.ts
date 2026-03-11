@@ -1,4 +1,5 @@
 import { dirname, join } from "node:path"
+import { inspect } from "node:util"
 import { fileURLToPath } from "node:url"
 import { BridgeOrchestrator } from "./bridge-orchestrator.ts"
 import { BridgeSdkClient } from "./bridge-sdk-client.ts"
@@ -53,6 +54,52 @@ function resolvePluginConfig(raw: Record<string, unknown> | undefined): Required
 
 function resolvePluginRootDir(): string {
   return dirname(dirname(fileURLToPath(import.meta.url)))
+}
+
+function formatBridgeError(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  if (typeof error === "string" && error.length > 0) {
+    return error
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const record = error as {
+      name?: unknown
+      data?: {
+        path?: unknown
+        message?: unknown
+        issues?: Array<{ message?: unknown; path?: unknown }>
+      }
+    }
+    const parts: string[] = []
+
+    if (typeof record.name === "string" && record.name.length > 0) {
+      parts.push(record.name)
+    }
+    if (typeof record.data?.path === "string" && record.data.path.length > 0) {
+      parts.push(`path=${record.data.path}`)
+    }
+    if (typeof record.data?.message === "string" && record.data.message.length > 0) {
+      parts.push(record.data.message)
+    }
+    if (Array.isArray(record.data?.issues) && record.data.issues.length > 0) {
+      const issueMessages = record.data.issues
+        .map((issue) => typeof issue.message === "string" ? issue.message : null)
+        .filter((message): message is string => message !== null && message.length > 0)
+      if (issueMessages.length > 0) {
+        parts.push(issueMessages.join("; "))
+      }
+    }
+
+    if (parts.length > 0) {
+      return parts.join(" | ")
+    }
+  }
+
+  return inspect(error, { depth: 5, breakLength: 120 })
 }
 
 function createDefaultOrchestrator(config: Required<OmoClawPluginConfig>): BridgeOrchestrator {
@@ -153,7 +200,11 @@ export function createOpenClawBridgePlugin(
         ownsCompaction: false,
       },
       ingest: async ({ threadID, text }) => {
-        await orchestrator.injectContext(threadID, text)
+        try {
+          await orchestrator.injectContext(threadID, text)
+        } catch (error) {
+          throw new Error(`omo-claw ingest failed: ${formatBridgeError(error)}`)
+        }
         return { ingested: true }
       },
       assemble: async ({ messages }) => ({
