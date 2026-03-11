@@ -9,6 +9,7 @@ describe("bridge launcher", () => {
     expect(launcher).toContain('export XDG_CONFIG_HOME="$RUNTIME_DIR/xdg/config"')
     expect(launcher).toContain('export XDG_DATA_HOME="$RUNTIME_DIR/xdg/data"')
     expect(launcher).toContain('export XDG_STATE_HOME="$RUNTIME_DIR/xdg/state"')
+    expect(launcher).toContain("unset OPENCODE_CONFIG")
     expect(launcher).toContain('export OPENCODE_CONFIG_DIR="$RUNTIME_DIR/.opencode"')
   })
 

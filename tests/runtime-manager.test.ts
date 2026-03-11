@@ -67,11 +67,13 @@ describe("RuntimeManager", () => {
 
   test("start spawns process and waits for health", async () => {
     const child = new FakeChildProcess()
-    const spawnCalls: Array<{ command: string; args: string[]; shell?: boolean }> = []
+    const spawnCalls: Array<{ command: string; args: string[]; shell?: boolean; env?: NodeJS.ProcessEnv }> = []
     let fetchCount = 0
+    const originalConfig = process.env.OPENCODE_CONFIG
+    process.env.OPENCODE_CONFIG = "D:/stale/opencode.bridge.json"
     const manager = new RuntimeManager(createRuntimeOptions(), {
       spawn(command, args, options) {
-        spawnCalls.push({ command, args, shell: options.shell })
+        spawnCalls.push({ command, args, shell: options.shell, env: options.env })
         return child
       },
       fetch: async (_input, _init) => {
@@ -81,14 +83,26 @@ describe("RuntimeManager", () => {
       sleep: async () => {},
     })
 
-    const result = await manager.start()
+    try {
+      const result = await manager.start()
 
-    expect(spawnCalls).toEqual([
-      { command: "opencode", args: ["serve", "--port", "19222", "--hostname", "127.0.0.1"], shell: process.platform === "win32" },
-    ])
-    expect(result.pid).toBe(4242)
-    expect(result.baseUrl).toBe("http://127.0.0.1:19222")
-    expect(manager.isRunning()).toBeTrue()
+      expect(spawnCalls).toHaveLength(1)
+      expect(spawnCalls[0]).toMatchObject({
+        command: "opencode",
+        args: ["serve", "--port", "19222", "--hostname", "127.0.0.1"],
+        shell: process.platform === "win32",
+      })
+      expect(spawnCalls[0]?.env?.OPENCODE_CONFIG).toBeUndefined()
+      expect(result.pid).toBe(4242)
+      expect(result.baseUrl).toBe("http://127.0.0.1:19222")
+      expect(manager.isRunning()).toBeTrue()
+    } finally {
+      if (originalConfig === undefined) {
+        delete process.env.OPENCODE_CONFIG
+      } else {
+        process.env.OPENCODE_CONFIG = originalConfig
+      }
+    }
   })
 
   test("stop terminates spawned process", async () => {
