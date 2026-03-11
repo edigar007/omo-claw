@@ -6,6 +6,7 @@ export interface RuntimeManagerOptions {
   runtimeDir: string
   port: number
   hostname: string
+  protocol?: "http" | "https"
   serverPasswordFile: string
   configPath: string
   configDir: string
@@ -13,6 +14,7 @@ export interface RuntimeManagerOptions {
   xdgDataHome: string
   xdgStateHome: string
   serverUsername?: string
+  manageProcess?: boolean
   startupTimeoutMs?: number
   healthPollIntervalMs?: number
 }
@@ -109,7 +111,7 @@ export class RuntimeManager {
   }
 
   getBaseUrl(): string {
-    return `http://${this.options.hostname}:${this.options.port}`
+    return `${this.options.protocol ?? "http"}://${this.options.hostname}:${this.options.port}`
   }
 
   getHealthUrl(): string {
@@ -129,6 +131,14 @@ export class RuntimeManager {
   async start(): Promise<{ pid?: number; baseUrl: string }> {
     if (this.isRunning()) {
       return { pid: this.child?.pid, baseUrl: this.getBaseUrl() }
+    }
+
+    if (this.options.manageProcess === false) {
+      const health = await this.waitForHealthyExternal()
+      return {
+        baseUrl: this.getBaseUrl(),
+        ...(health.version ? { pid: undefined } : {}),
+      }
     }
 
     const spec = this.buildSpawnSpec()
@@ -173,6 +183,9 @@ export class RuntimeManager {
   }
 
   async stop(): Promise<void> {
+    if (this.options.manageProcess === false) {
+      return
+    }
     const child = this.child
     this.child = undefined
     if (!child) return
@@ -191,5 +204,31 @@ export class RuntimeManager {
 
   private readServerPassword(): string {
     return readFileSync(this.options.serverPasswordFile, "utf8").trim()
+  }
+
+  private async waitForHealthyExternal(): Promise<{ healthy: true; version?: string }> {
+    const timeoutMs = this.options.startupTimeoutMs ?? 5_000
+    const pollMs = this.options.healthPollIntervalMs ?? 100
+    const startedAt = this.deps.now()
+    let lastError: unknown
+
+    while (this.deps.now() - startedAt <= timeoutMs) {
+      try {
+        const response = await this.deps.fetch(this.getHealthUrl(), this.buildHealthcheckRequest().init)
+        if (response.ok) {
+          const body = await response.json() as { healthy?: boolean; version?: string }
+          if (body.healthy) {
+            return { healthy: true, version: body.version }
+          }
+        }
+      } catch (error) {
+        lastError = error
+      }
+
+      await this.deps.sleep(pollMs)
+    }
+
+    const detail = lastError instanceof Error ? ` Last error: ${lastError.message}` : ""
+    throw new Error(`Timed out waiting for external bridge runtime health after ${timeoutMs}ms.${detail}`)
   }
 }

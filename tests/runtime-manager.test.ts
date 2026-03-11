@@ -106,4 +106,30 @@ describe("RuntimeManager", () => {
     expect(child.killed).toBeTrue()
     expect(manager.isRunning()).toBeFalse()
   })
+
+  test("start can health check an externally managed runtime without spawning", async () => {
+    let spawnCount = 0
+    const manager = new RuntimeManager({
+      ...createRuntimeOptions(),
+      manageProcess: false,
+    }, {
+      spawn() {
+        spawnCount += 1
+        return {
+          pid: 1,
+          exitCode: null,
+          killed: false,
+          kill() { return true },
+          once() { return this },
+        }
+      },
+      fetch: async () => new Response(JSON.stringify({ healthy: true, version: "1.2.21" }), { status: 200 }),
+      sleep: async () => {},
+    })
+
+    const result = await manager.start()
+
+    expect(spawnCount).toBe(0)
+    expect(result.baseUrl).toBe("http://127.0.0.1:19222")
+  })
 })
