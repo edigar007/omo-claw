@@ -26,6 +26,7 @@ describe("RuntimeManager", () => {
     expect(env.XDG_DATA_HOME).toContain(join("integration", "bridge-runtime", "xdg", "data"))
     expect(env.XDG_STATE_HOME).toContain(join("integration", "bridge-runtime", "xdg", "state"))
     expect(env.OPENCODE_CONFIG_DIR).toContain(join("integration", "bridge-runtime", ".opencode"))
+    expect("OPENCODE_CONFIG" in env).toBeFalse()
     expect(env.OPENCODE_SERVER_PASSWORD).toBe("secret-123")
   })
 
