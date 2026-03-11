@@ -141,9 +141,11 @@ export class RuntimeManager {
     }
 
     const spec = this.buildSpawnSpec()
+    const childEnv: NodeJS.ProcessEnv = { ...process.env, ...spec.env }
+    delete childEnv.OPENCODE_CONFIG
     const child = this.deps.spawn(spec.command, spec.args, {
       cwd: this.options.rootDir,
-      env: { ...process.env, ...spec.env },
+      env: childEnv,
       stdio: "ignore",
       shell: spec.shell,
     })

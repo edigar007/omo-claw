@@ -13,6 +13,7 @@ fi
 export XDG_CONFIG_HOME="$RUNTIME_DIR/xdg/config"
 export XDG_DATA_HOME="$RUNTIME_DIR/xdg/data"
 export XDG_STATE_HOME="$RUNTIME_DIR/xdg/state"
+unset OPENCODE_CONFIG
 export OPENCODE_CONFIG_DIR="$RUNTIME_DIR/.opencode"
 export OPENCODE_SERVER_PASSWORD=$(tr -d '\r\n' < "$SECRET_FILE")
 
